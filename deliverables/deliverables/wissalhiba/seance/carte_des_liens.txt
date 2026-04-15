@@ -1,0 +1,82 @@
+﻿# Carte des entités et des liens potentiels
+
+## 1. Inventaire des entités
+
+| Entité ou type d'entité | Exemple local | Pourquoi s'agit-il d'une entité ? | Attributs associés | Identifiant local potentiel |
+| --- | --- | --- | --- | --- |
+| Établissement | ENSIAS | Objet réel avec existence propre | institution_name, short_name, website, institution_type, year_created | short_name + city |
+| Université | Université Mohammed V | Entité regroupant plusieurs établissements | institution_name, short_name, year_created | short_name |
+| Ville | Rabat | Entité géographique réelle partagée | city, country | code GeoNames |
+| Pays | Morocco | Entité géographique de niveau supérieur | country | code ISO |
+| Domaine disciplinaire | computer science | Permet de classifier les établissements | main_field | valeur à normaliser |
+| Type institutionnel | public school | Catégorie administrative | institution_type | valeur à normaliser |
+| Site web | https://www.ensias.um5.ac.ma | Ressource numérique identifiable | website | URL |
+
+## 2. Relations conceptuelles observées
+
+| Source | Relation conceptuelle | Cible | Cardinalité | Commentaire |
+| --- | --- | --- | --- | --- |
+| Établissement | est localisé dans | Ville | N → 1 | Plusieurs établissements par ville |
+| Ville | est située dans | Pays | N → 1 | Toutes les villes au Maroc |
+| Établissement | appartient au domaine de | Domaine disciplinaire | N → N | Un établissement peut avoir plusieurs domaines |
+| Établissement | est de type | Type institutionnel | N → 1 | Un seul type par établissement |
+| Établissement | possède | Site web | 1 → 1 | URL officielle |
+
+
+## 3. Liens externes proposés
+
+| Entité locale | Ressource externe candidate | Type de lien envisagé | Critères d'appariement | Justification | Bénéfice attendu | Niveau de confiance | Risque |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| ENSIAS (établissement) | Wikidata Q3290897 | owl:sameAs | Correspondance sur institution_name + city + website | ENSIAS est une entité connue sur Wikidata avec page dédiée | Accès aux données enrichies (coordonnées, logo, description multilingue) | Élevé | Faible — nom et ville suffisent à la désambiguïsation |
+| Université Mohammed V (établissement) | Wikidata Q1472951 | owl:sameAs | Correspondance sur institution_name + short_name + year_created | UM5 est bien référencée sur Wikidata | Enrichissement avec effectifs, classements, liens institutionnels | Élevé | Faible pour les grandes universités connues |
+| Rabat (ville) | GeoNames 2538475 | schema:location → GeoNames URI | Correspondance exacte sur le nom de ville | GeoNames fournit des coordonnées GPS, pays, timezone | Permet la géolocalisation et l'interconnexion avec des données cartographiques | Élevé | Très faible — Rabat est sans ambiguïté |
+| engineering (domaine) | DBpedia dbr:Engineering | skos:exactMatch | Correspondance lexicale directe | DBpedia fournit une description structurée du domaine | Interopérabilité avec d'autres datasets académiques utilisant DBpedia | Moyen | Faible pour engineering simple, plus élevé pour applied sciences |
+| Morocco (pays) | Wikidata Q1028 | schema:addressCountry | Correspondance sur le nom anglais Morocco + code ISO MA | Le Maroc est une entité Wikidata non ambiguë | Lien vers données géopolitiques, administratives, démographiques | Très élevé | Nul |
+| Établissements (type public school) | schema:CollegeOrUniversity | rdf:type | Correspondance sémantique sur institution_type | Schema.org est un vocabulaire standard pour les pages web et les moteurs de recherche | Meilleure indexation des ressources, compatibilité avec les outils LOD | Élevé | Faible — le mapping public school → CollegeOrUniversity est justifiable |
+
+## 4. Schéma conceptuel
+
+Vous pouvez insérer ici :
+
+- une capture d'écran d'un schéma
+- ou un diagramme Mermaid
+
+Exemple Mermaid purement conceptuel :
+
+```mermaid
+graph LR
+  Dataset["Jeu de données local"]
+  Institution["Établissement"]
+  City["Ville"]
+  Country["Pays"]
+  Field["Domaine"]
+  WD["Ressource externe : Wikidata"]
+  GN["Ressource externe : GeoNames"]
+
+  Dataset --> Institution
+  Institution --> City
+  City --> Country
+  Institution --> Field
+  Institution -. lien potentiel .-> WD
+  City -. lien potentiel .-> GN
+```
+
+
+
+
+## 5. Analyse critique
+
+- Quels liens vous paraissent les plus fiables ?
+Les liens vers Wikidata pour les grandes universités (UM5, UH2C, UCA) et vers GeoNames pour les villes sont les plus sûrs.
+- Quels liens restent incertains ?
+Le lien pour le domaine applied sciences est le plus risqué : ce terme est vague et peut correspondre à plusieurs concepts dans Wikidata ou DBpedia.
+- Quelles informations supplémentaires faudrait-il pour automatiser les correspondances ?
+Un code pays ISO-3166 fiable dans le dataset
+Les coordonnées GPS des établissements (pour un appariement géographique fiable)
+- Quelles entités devraient recevoir un identifiant stable en priorité ?
+L'établissement — c'est l'entité centrale du dataset, sans identifiant stable tout le reste est fragile.
+La ville — partagée par plusieurs établissements, un identifiant GeoNames permettrait des jointures immédiates avec d'autres sources.
+- Quels risques de faux positifs ou de collisions d'identifiants avez-vous identifiés ?
+Plusieurs universités marocaines portent des noms similaires
+Le nom Université Mohammed V existe dans plusieurs contextes historiques 
+DBpedia extrait ses données de Wikipédia : si la page d'un établissement est absente ou mal renseignée sur Wikipédia, le lien DBpedia sera vide ou incorrect.
